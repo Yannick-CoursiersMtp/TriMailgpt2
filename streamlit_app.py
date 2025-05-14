@@ -5,14 +5,14 @@ from googleapiclient.discovery import build
 st.set_page_config(page_title="TriMail", layout="centered")
 st.title("📬 TriMail - Lecture et tri automatique de vos mails Gmail")
 
-# Config depuis les secrets Streamlit
+# Configuration OAuth depuis secrets TOML (client web)
 client_config = {
-    "installed": {
+    "web": {
         "client_id": st.secrets["google"]["client_id"],
         "client_secret": st.secrets["google"]["client_secret"],
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token",
-        "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob"]
+        "redirect_uris": ["https://tri-mail.streamlit.app/"]
     }
 }
 
@@ -23,11 +23,12 @@ if "credentials" not in st.session_state:
 if "messages_scanned" not in st.session_state:
     st.session_state["messages_scanned"] = 0
 
+# Étape 1 : Authentification
 if st.session_state["credentials"] is None:
     flow = Flow.from_client_config(
         client_config,
         scopes=SCOPES,
-        redirect_uri='urn:ietf:wg:oauth:2.0:oob'
+        redirect_uri="https://tri-mail.streamlit.app/"
     )
     auth_url, _ = flow.authorization_url(prompt='consent')
     st.markdown(f"[1. Clique ici pour te connecter à Gmail]({auth_url})")
@@ -38,6 +39,8 @@ if st.session_state["credentials"] is None:
         st.session_state["credentials"] = flow.credentials
         st.success("Connexion réussie ! Recharge la page.")
         st.stop()
+
+# Étape 2 : Lecture des mails
 else:
     creds = st.session_state["credentials"]
     service = build('gmail', 'v1', credentials=creds)
