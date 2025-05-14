@@ -1,24 +1,31 @@
 import streamlit as st
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
-import base64
 
 st.set_page_config(page_title="TriMail", layout="centered")
 st.title("📬 TriMail - Lecture et tri automatique de vos mails Gmail")
 
-# État initial
+# Config depuis les secrets Streamlit
+client_config = {
+    "installed": {
+        "client_id": st.secrets["google"]["client_id"],
+        "client_secret": st.secrets["google"]["client_secret"],
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob"]
+    }
+}
+
+SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
+
 if "credentials" not in st.session_state:
     st.session_state["credentials"] = None
 if "messages_scanned" not in st.session_state:
     st.session_state["messages_scanned"] = 0
 
-CLIENT_SECRET_JSON = "client_secret.json"
-SCOPES = ['https://www.googleapis.com/auth/gmail.modify']
-
-# Étape 1 : Connexion OAuth
 if st.session_state["credentials"] is None:
-    flow = Flow.from_client_secrets_file(
-        CLIENT_SECRET_JSON,
+    flow = Flow.from_client_config(
+        client_config,
         scopes=SCOPES,
         redirect_uri='urn:ietf:wg:oauth:2.0:oob'
     )
@@ -31,7 +38,6 @@ if st.session_state["credentials"] is None:
         st.session_state["credentials"] = flow.credentials
         st.success("Connexion réussie ! Recharge la page.")
         st.stop()
-
 else:
     creds = st.session_state["credentials"]
     service = build('gmail', 'v1', credentials=creds)
